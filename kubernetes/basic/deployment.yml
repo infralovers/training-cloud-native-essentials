@@ -1,0 +1,24 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: colors
+  namespace: default
+  labels:
+    app: colors
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: colors
+  template:
+    metadata:
+      labels:
+        app: colors
+    spec:
+      containers:
+        - image: ghcr.io/infralovers/colors_app:2.4.1
+          name: colors
+          ports:
+          - name: web
+            containerPort: 8080

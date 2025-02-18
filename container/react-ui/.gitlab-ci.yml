@@ -1,0 +1,13 @@
+---
+
+build:
+  image: docker:27
+  stage: build
+  services:
+    - docker:27-dind
+  variables:
+    IMAGE_TAG: $CI_REGISTRY_IMAGE:$CI_PIPELINE_IID
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_REGISTRY_PASSWORD $CI_REGISTRY
+    - docker buildx build -t $IMAGE_TAG .
+    - docker push $IMAGE_TAG

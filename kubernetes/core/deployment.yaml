@@ -1,0 +1,21 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: whoami     # Deployment name
+  namespace: default
+spec:
+  replicas: 3           # Replica count
+  selector:
+    matchLabels:
+      app: whoami
+  template:
+    metadata:
+      labels:
+        app: whoami
+    spec:
+      containers:
+      - name: service
+        image: ghcr.io/infralovers/colors_app:2.4.1
+        ports:
+        - containerPort: 8080
