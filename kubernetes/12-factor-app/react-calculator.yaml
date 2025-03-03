@@ -1,0 +1,47 @@
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: calculator-front-end
+  labels:
+    app: calculator-front-end
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: calculator-front-end
+  template:
+    metadata:
+      labels:
+        app: calculator-front-end
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "calculator-front-end"
+        dapr.io/app-port: "8080"
+        dapr.io/config: "appconfig"
+    spec:
+      containers:
+      - name: calculator-front-end
+        image: quay.io/infralovers/distributed-calculator/react-ui:1.0.3
+        ports:
+        - containerPort: 8080
+        imagePullPolicy: Always
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 8080
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100M
+          limits:
+            cpu: 250m
+            memory: 125M
