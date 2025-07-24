@@ -1,0 +1,170 @@
+services:
+
+  ############################
+  # traefik api gateway
+  ############################
+  traefik:
+    image: traefik:v3.2
+    command:
+      - "--api.insecure=true" # Don't do that in production!
+      - "--providers.docker=true"
+      - "--providers.docker.exposedbydefault=false"
+    ports:
+      # The HTTP port
+      - "80:80"
+      # The Web UI (enabled by --api.insecure=true)
+      - "8080:8080"
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock:ro
+    networks:
+      - calculator
+      - default
+
+
+  redis:
+    image: docker.io/redis:8.0
+    environment:
+      - REDIS_DISABLE_COMMANDS=FLUSHDB,FLUSHALL
+      - REDIS_PASSWORD=Pa55w.rd
+    networks:
+      - calculator
+    volumes:
+      - 'redis_data:/data'
+
+  placement:
+    image: "daprio/dapr"
+    command: ["./placement", "-port", "50006"]
+
+  frontend:
+    build: ../../container/react-ui
+    networks:
+      - calculator
+    depends_on:
+    - redis
+    - placement
+    labels:
+      - "traefik.enable=true"
+      - "traefik.http.services.12factor.loadbalancer.server.port=8080" # container exposes multiple ports
+      - "traefik.http.routers.12factor.rule=Host(`12factor.<ENV-NAME>-<ENV-USER-ID>-02.<ENV-ANIMAL>.<ENV-DOMAIN>`)"
+
+
+  frontend-dapr:
+    image: "daprio/daprd:latest"
+    command: [
+        "./daprd",
+      "--app-id", "frontend",
+      "--app-port", "8080",
+      "--placement-host-address", "placement:50006", # Dapr's placement service can be reach via the docker DNS entry
+      "--resources-path", "/components"
+      ]
+    volumes:
+        - "../../compose/12-factor-app/components/:/components" # Mount our components folder for the runtime to use. The mounted location must match the --resources-path argument.
+    depends_on:
+        - frontend
+    network_mode: "service:frontend"
+
+
+  subtract:
+    build: ../../container/csharp
+    depends_on:
+    - redis
+    - placement
+    networks:
+      - calculator
+
+  subtract-dapr:
+    image: "daprio/daprd:latest"
+    command: [
+        "./daprd",
+      "--app-id", "subtractapp",
+      "--app-port", "80",
+      "--placement-host-address", "placement:50006", # Dapr's placement service can be reach via the docker DNS entry
+      "--resources-path", "/components"
+      ]
+    volumes:
+        - "../../compose/12-factor-app/components/:/components" # Mount our components folder for the runtime to use. The mounted location must match the --resources-path argument.
+    depends_on:
+        - subtract
+    network_mode: "service:subtract"
+
+  adder:
+    build: ../../container/go
+    depends_on:
+    - redis
+    - placement
+    networks:
+      - calculator
+    environment:
+      - APP_PORT=6000
+
+  adder-dapr:
+    image: "daprio/daprd:latest"
+    command: [
+        "./daprd",
+      "--app-id", "addapp",
+      "--app-port", "6000",
+      "--placement-host-address", "placement:50006", # Dapr's placement service can be reach via the docker DNS entry
+      "--resources-path", "/components"
+      ]
+    volumes:
+        - "../../compose/12-factor-app/components/:/components" # Mount our components folder for the runtime to use. The mounted location must match the --resources-path argument.
+    depends_on:
+        - adder
+    network_mode: "service:adder"
+
+  divider:
+    build: ../../container/node
+    depends_on:
+    - redis
+    - placement
+    networks:
+      - calculator
+    environment:
+      - APP_PORT=4000
+
+  divider-dapr:
+    image: "daprio/daprd:latest"
+    command: [
+        "./daprd",
+      "--app-id", "divideapp",
+      "-app-port", "4000",
+      "--placement-host-address", "placement:50006", # Dapr's placement service can be reach via the docker DNS entry
+      "--resources-path", "/components"
+      ]
+    volumes:
+        - "../../compose/12-factor-app/components/:/components" # Mount our components folder for the runtime to use. The mounted location must match the --resources-path argument.
+    depends_on:
+        - divider
+    network_mode: "service:divider"
+
+  multiplier:
+    build: ../../container/python
+    depends_on:
+    - redis
+    - placement
+    networks:
+      - calculator
+    environment:
+      - APP_PORT=5000
+
+  multiplier-dapr:
+    image: "daprio/daprd:latest"
+    command: [
+      "./daprd",
+     "--app-id", "multiplyapp",
+     "--app-port", "5000",
+     "--placement-host-address", "placement:50006", # Dapr's placement service can be reach via the docker DNS entry
+     "--resources-path", "/components"
+     ]
+    volumes:
+        - "../../compose/12-factor-app/components/:/components" # Mount our components folder for the runtime to use. The mounted location must match the --resources-path argument.
+    depends_on:
+      - multiplier
+    network_mode: "service:multiplier"
+
+networks:
+  calculator:
+
+volumes:
+  redis_data:
+    driver: local

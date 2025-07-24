@@ -1,0 +1,11 @@
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: colors-config
+data:
+  color: green
+  config.properties: |
+    live=2
+    ready=2
+    port=8080
