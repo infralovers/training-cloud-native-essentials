@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: divideapp
+  labels:
+    app: divide
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: divide
+  template:
+    metadata:
+      labels:
+        app: divide
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "divideapp"
+        dapr.io/app-port: "4000"
+        dapr.io/config: "appconfig"
+    spec:
+      containers:
+      - name: divide
+        image: quay.io/infralovers/distributed-calculator/node:1.0.3
+        env:
+        - name: APP_PORT
+          value: "4000"
+        ports:
+        - containerPort: 4000
+        imagePullPolicy: Always
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 4000
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100M
+          limits:
+            cpu: 250m
+            memory: 125M

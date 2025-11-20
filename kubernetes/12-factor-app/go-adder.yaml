@@ -1,0 +1,49 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: addapp
+  labels:
+    app: add
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: add
+  template:
+    metadata:
+      labels:
+        app: add
+      annotations:
+        dapr.io/enabled: "true"
+        dapr.io/app-id: "addapp"
+        dapr.io/app-port: "6000"
+        dapr.io/config: "appconfig"
+    spec:
+      containers:
+      - name: add
+        image: quay.io/infralovers/distributed-calculator/go:1.0.3
+        env:
+        - name: APP_PORT
+          value: "6000"
+        ports:
+        - containerPort: 6000
+        imagePullPolicy: Always
+        readinessProbe:
+          httpGet:
+            path: /health
+            port: 6000
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        livenessProbe:
+          httpGet:
+            path: /health
+            port: 6000
+          initialDelaySeconds: 10
+          timeoutSeconds: 5
+        resources:
+          requests:
+            cpu: 100m
+            memory: 100M
+          limits:
+            cpu: 250m
+            memory: 125M

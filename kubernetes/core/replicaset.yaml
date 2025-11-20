@@ -1,0 +1,19 @@
+---
+apiVersion: apps/v1
+kind: ReplicaSet
+metadata:
+  name: colors          # ReplicaSet name
+  namespace: default
+spec:
+  replicas: 3           # Replica count
+  selector:
+    matchLabels:
+      app: colors
+  template:
+    metadata:
+      labels:
+        app: colors
+    spec:
+      containers:
+      - name: colors
+        image: ghcr.io/infralovers/colors_app:2.4.1
